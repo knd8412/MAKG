@@ -1,0 +1,27 @@
+# --- Python Specific ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.env
+
+# --- Raspberry Pi & Linux System ---
+.DS_Store
+.thumbs.db
+.local
+.cache/
+*.swp
+*~
+
+# --- Hardware & IDE ---
+.vscode/
+.idea/
+.project
+.settings/
+
+# --- Logs & Databases (Hackathon Specific) ---
+*.log
+*.sqlite
+instance/
