@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>StudyBuddy — Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>*{margin:0;padding:0;box-sizing:border-box;}body{overflow:hidden;}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const getStyles = (dark) => `
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:          ${dark ? '#0f0a06' : '#fdf6f0'};
+    --surface:     ${dark ? '#1a1008' : '#ffffff'};
+    --surface2:    ${dark ? '#231508' : '#fff8f3'};
+    --border:      ${dark ? '#3a2010' : '#f0ddd0'};
+    --accent:      #ff6b1a;
+    --accent-light: #ff8c47;
+    --accent-dim:  ${dark ? 'rgba(255,107,26,0.15)' : 'rgba(255,107,26,0.08)'};
+    --accent2:     #ffb800;
+    --accent3:     ${dark ? '#39ff14' : '#22c55e'};
+    --warn:        #ffb800;
+    --danger:      #ef4444;
+    --text:        ${dark ? '#f0dfd0' : '#1a0f06'};
+    --text2:       ${dark ? '#c8a88a' : '#6b3a20'};
+    --muted:       ${dark ? '#7a5540' : '#b07050'};
+    --shadow:      ${dark ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 12px rgba(255,107,26,0.07)'};
+  }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .mono { font-family: 'Space Mono', monospace; }
+
+  .scanlines {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1000;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      ${dark ? 'rgba(0,0,0,0.05)' : 'rgba(255,107,26,0.012)'} 2px,
+      ${dark ? 'rgba(0,0,0,0.05)' : 'rgba(255,107,26,0.012)'} 4px
+    );
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    grid-template-rows: 57px 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    grid-column: 1 / -1;
+    padding: 0 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface);
+    z-index: 100;
+    box-shadow: var(--shadow);
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  .logo { display: flex; align-items: center; gap: 12px; }
+
+  .logo-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, #ff6b1a, #ffb800);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 14px rgba(255,107,26,0.4);
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%,100% { box-shadow: 0 4px 14px rgba(255,107,26,0.35); }
+    50%      { box-shadow: 0 4px 28px rgba(255,107,26,0.65); }
+  }
+
+  .logo-text { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo-text span { color: var(--accent); }
+
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 7px;
+    padding: 5px 12px; border-radius: 20px;
+    border: 1px solid var(--border);
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    background: var(--surface2); color: var(--text2);
+    transition: background 0.3s;
+  }
+
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; animation: blink 1.5s ease-in-out infinite; }
+  .dot-green  { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+  .dot-orange { background: var(--accent);  box-shadow: 0 0 6px var(--accent); }
+  .dot-red    { background: var(--danger);  box-shadow: 0 0 6px var(--danger); }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .theme-toggle {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 20px;
+    border: 1.5px solid var(--accent);
+    background: var(--accent-dim);
+    cursor: pointer;
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    color: var(--accent); font-weight: 700; letter-spacing: 0.5px;
+    transition: all 0.2s; user-select: none;
+  }
+  .theme-toggle:hover {
+    background: rgba(255,107,26,0.22);
+    box-shadow: 0 0 14px rgba(255,107,26,0.25);
+    transform: translateY(-1px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 0;
+    height: calc(100vh - 57px);
+    overflow-y: auto;
+    transition: background 0.3s;
+  }
+
+  .nav-section-label {
+    font-size: 9px; letter-spacing: 2px; color: var(--muted);
+    padding: 0 20px 10px; text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 20px; cursor: pointer;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    border-left: 2px solid transparent; transition: all 0.18s;
+  }
+  .nav-item:hover { color: var(--text); background: var(--accent-dim); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-dim); }
+  .nav-item-icon { font-size: 16px; width: 20px; text-align: center; }
+
+  /* MAIN */
+  .main { padding: 28px; overflow-y: auto; height: calc(100vh - 57px); }
+  .page-title   { font-size: 28px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px; }
+  .page-subtitle { color: var(--muted); font-size: 12px; margin-bottom: 28px; font-family: 'Space Mono', monospace; }
+
+  /* GRIDS */
+  .grid-4    { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-3    { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-2    { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .grid-live { display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+    position: relative; overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,107,26,0.3), transparent);
+  }
+  .card-accent { border-color: rgba(255,107,26,0.4); }
+  .card-warn   { border-color: rgba(255,184,0,0.4); }
+  .card-danger { border-color: rgba(239,68,68,0.4); }
+  .card-green  { border-color: ${dark ? 'rgba(57,255,20,0.35)' : 'rgba(34,197,94,0.35)'}; }
+
+  /* STATS */
+  .stat-label  { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 8px; }
+  .stat-value  { font-size: 32px; font-weight: 800; line-height: 1; font-family: 'Space Mono', monospace; margin-bottom: 4px; }
+  .stat-sub    { font-size: 12px; color: var(--muted); }
+  .stat-delta  { font-size: 12px; font-family: 'Space Mono', monospace; }
+  .delta-up    { color: var(--accent3); }
+  .delta-down  { color: var(--danger); }
+
+  /* SECTION */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-title  { font-size: 14px; font-weight: 700; letter-spacing: 0.3px; display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content: ''; display: inline-block; width: 3px; height: 14px; background: var(--accent); border-radius: 2px; }
+
+  /* BADGES */
+  .badge         { font-size: 10px; font-family: 'Space Mono', monospace; padding: 2px 8px; border-radius: 10px; border: 1px solid; }
+  .badge-accent  { color: var(--accent);  border-color: rgba(255,107,26,0.4);  background: var(--accent-dim); }
+  .badge-green   { color: var(--accent3); border-color: ${dark ? 'rgba(57,255,20,0.3)' : 'rgba(34,197,94,0.3)'}; background: ${dark ? 'rgba(57,255,20,0.08)' : 'rgba(34,197,94,0.08)'}; }
+  .badge-warn    { color: var(--warn);    border-color: rgba(255,184,0,0.35);  background: rgba(255,184,0,0.08); }
+  .badge-danger  { color: var(--danger);  border-color: rgba(239,68,68,0.35);  background: rgba(239,68,68,0.08); }
+
+  /* POSTURE CIRCLE */
+  .posture-main   { display: flex; flex-direction: column; align-items: center; padding: 10px 0; }
+  .posture-circle {
+    width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--accent3);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .posture-circle.bad  { border-color: var(--danger); box-shadow: 0 0 30px rgba(239,68,68,0.35); animation: shake 0.5s ease-in-out infinite; }
+  .posture-circle.warn { border-color: var(--warn);   box-shadow: 0 0 30px rgba(255,184,0,0.3); }
+  @keyframes shake { 0%,100% { transform:translateX(0); } 25% { transform:translateX(-3px); } 75% { transform:translateX(3px); } }
+  .posture-icon  { font-size: 38px; margin-bottom: 4px; }
+  .posture-score { font-size: 22px; font-weight: 800; font-family: 'Space Mono', monospace; }
+  .posture-label { font-size: 13px; font-weight: 700; margin-top: 4px; }
+
+  /* TIMER */
+  .timer-display {
+    font-size: 52px; font-weight: 400; font-family: 'Space Mono', monospace;
+    color: var(--accent); text-align: center; line-height: 1;
+    text-shadow: 0 0 20px rgba(255,107,26,0.3); margin: 10px 0;
+  }
+  .timer-controls { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+
+  /* BUTTONS */
+  .btn { padding: 8px 18px; border-radius: 6px; border: 1px solid; font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer; transition: all 0.15s; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .btn-accent { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .btn-accent:hover { background: rgba(255,107,26,0.2); box-shadow: 0 0 14px rgba(255,107,26,0.3); }
+  .btn-danger { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.08); }
+  .btn-danger:hover { background: rgba(239,68,68,0.18); }
+  .btn-muted  { border-color: var(--border); color: var(--muted); background: transparent; }
+  .btn-muted:hover { color: var(--text); border-color: var(--muted); }
+
+  /* MODE TABS */
+  .mode-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .mode-tab  { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); text-align: center; cursor: pointer; font-size: 11px; font-weight: 700; color: var(--muted); transition: all 0.18s; font-family: 'Space Mono', monospace; }
+  .mode-tab:hover  { border-color: var(--accent); color: var(--text); }
+  .mode-tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+  /* ALERTS */
+  .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px; background: var(--surface2); font-size: 13px; transition: background 0.3s; }
+  .alert-item:last-child { margin-bottom: 0; }
+  .alert-icon { font-size: 16px; margin-top: 1px; }
+  .alert-time { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 2px; }
+
+  /* TABLE */
+  .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .history-table th { text-align: left; padding: 8px 12px; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  .history-table td { padding: 12px; border-bottom: 1px solid var(--border); }
+  .history-table tr:last-child td { border-bottom: none; }
+  .history-table tr:hover td { background: var(--accent-dim); }
+
+  /* BAR CHART */
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 100px; margin-top: 12px; }
+  .bar-col   { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bar       { width: 100%; border-radius: 4px 4px 0 0; transition: all 0.3s; cursor: pointer; min-height: 4px; }
+  .bar:hover { filter: brightness(1.15); }
+  .bar-label { font-size: 9px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+  /* PHONE BAR */
+  .phone-bar      { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; margin-top: 8px; }
+  .phone-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent3), var(--warn), var(--danger)); transition: width 0.5s; }
+
+  /* REPORT */
+  .report-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .report-metric { padding: 14px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); transition: background 0.3s; }
+  .report-metric-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; font-family: 'Space Mono', monospace; margin-bottom: 6px; }
+  .report-metric-val   { font-size: 16px; font-weight: 800; font-family: 'Space Mono', monospace; color: var(--accent); }
+
+  /* CAMERA */
+  .device-camera {
+    width: 100%; aspect-ratio: 4/3;
+    background: ${dark ? '#060a0d' : '#f7ede6'};
+    border-radius: 8px; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--muted);
+    position: relative; overflow: hidden; margin-bottom: 12px;
+  }
+  .camera-overlay { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,107,26,0.025) 20px, rgba(255,107,26,0.025) 21px); }
+  .corner { position: absolute; width: 16px; height: 16px; border-color: var(--accent); border-style: solid; }
+  .corner-tl { top:10px; left:10px;  border-width: 2px 0 0 2px; }
+  .corner-tr { top:10px; right:10px; border-width: 2px 2px 0 0; }
+  .corner-bl { bottom:10px; left:10px;  border-width: 0 0 2px 2px; }
+  .corner-br { bottom:10px; right:10px; border-width: 0 2px 2px 0; }
+  .person-silhouette { font-size: 64px; opacity: ${dark ? 0.15 : 0.3}; }
+  .keypoint { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); box-shadow: 0 0 6px var(--accent3); transform: translate(-50%,-50%); }
+  .keypoint.warn-point { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+  .live-indicator { position: absolute; top:10px; right:10px; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 4px; font-size: 10px; font-family: 'Space Mono', monospace; color: var(--danger); font-weight: 700; }
+
+  /* SIDEBAR STAT */
+  .sidebar-stat { padding: 12px 14px; margin: 0 12px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; transition: background 0.3s; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  @media (max-width: 900px) {
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+    .grid-live { grid-template-columns: 1fr; }
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+  }
+`;
+
+const sessionHistory = [
+  { date: "Feb 21", duration: "3h 24m", posture: 92, phone: "4 alerts",  focus: "High" },
+  { date: "Feb 20", duration: "5h 02m", posture: 78, phone: "11 alerts", focus: "Medium" },
+  { date: "Feb 19", duration: "2h 45m", posture: 95, phone: "1 alert",   focus: "High" },
+  { date: "Feb 18", duration: "4h 10m", posture: 64, phone: "18 alerts", focus: "Low" },
+  { date: "Feb 17", duration: "6h 30m", posture: 88, phone: "6 alerts",  focus: "High" },
+];
+
+const weeklyHours = [
+  { day: "Mon", h: 6.5 }, { day: "Tue", h: 4.2 }, { day: "Wed", h: 7.0 },
+  { day: "Thu", h: 3.8 }, { day: "Fri", h: 5.5 }, { day: "Sat", h: 2.1 }, { day: "Sun", h: 1.2 }
+];
+
+const recentAlerts = [
+  { icon: "📱", msg: "Phone detected for 4+ minutes",    time: "2 min ago",   type: "warn" },
+  { icon: "🧍", msg: "Slouching detected — sit upright!", time: "18 min ago", type: "danger" },
+  { icon: "📱", msg: "Phone detected for 2 minutes",     time: "47 min ago",  type: "warn" },
+  { icon: "⏸️", msg: "Break reminder — 90 min session",  time: "1h 20m ago",  type: "accent" },
+];
+
+function useTimer(running) {
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setSecs(s => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+  const fmt = s => {
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+  };
+  return [secs, fmt(secs)];
+}
+
+function App() {
+  const [dark, setDark] = useState(false);
+  const [page, setPage] = useState("Live Session");
+  const [running, setRunning] = useState(false);
+  const [secs, timerStr] = useTimer(running);
+  const [mode, setMode] = useState("Focus");
+  const [postureState, setPostureState] = useState("Good");
+  const [phonePct, setPhonePct] = useState(12);
+
+  useEffect(() => {
+    const states = ["Good","Good","Good","Warn","Bad","Good"];
+    let i = 0;
+    const id = setInterval(() => { if (running) { i=(i+1)%states.length; setPostureState(states[i]); }}, 4000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setPhonePct(p => Math.min(100, p+2)), 3000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  const postureScore = postureState==="Good" ? 94 : postureState==="Warn" ? 71 : 38;
+  const postureColor = postureState==="Good" ? "var(--accent3)" : postureState==="Warn" ? "var(--warn)" : "var(--danger)";
+  const postureEmoji = postureState==="Good" ? "✅" : postureState==="Warn" ? "⚠️" : "🚨";
+  const maxH = Math.max(...weeklyHours.map(d => d.h));
+
+  return (
+    <>
+      <style>{getStyles(dark)}</style>
+      <div className="scanlines" />
+      <div className="app">
+
+        {/* ── HEADER ── */}
+        <header className="header">
+          <div className="logo">
+            <div className="logo-icon">🤖</div>
+            <div className="logo-text">Study<span>Buddy</span></div>
+          </div>
+          <div className="header-right">
+            <div className="status-pill">
+              <div className={"status-dot " + (running ? 'dot-green' : 'dot-orange')} />
+              <span>{running ? 'DEVICE CONNECTED' : 'STANDBY'}</span>
+            </div>
+            <div className="status-pill">
+              <div className={"status-dot " + (postureState==='Good'?'dot-green':postureState==='Warn'?'dot-orange':'dot-red')} />
+              <span>POSTURE: {postureState.toUpperCase()}</span>
+            </div>
+            <div className="status-pill">
+              <span style={{color:'var(--accent)'}}>⬡ MODE: {mode.toUpperCase()}</span>
+            </div>
+            <div className="theme-toggle" onClick={() => setDark(d => !d)}>
+              {dark ? '☀️ LIGHT' : '🌙 DARK'}
+            </div>
+          </div>
+        </header>
+
+        {/* ── SIDEBAR ── */}
+        <nav className="sidebar">
+          <div style={{marginBottom:24}}>
+            <div className="nav-section-label">Navigation</div>
+            {["Live Session","History","Weekly Report"].map(p => (
+              <div key={p} className={"nav-item " + (page===p?'active':'')} onClick={() => setPage(p)}>
+                <span className="nav-item-icon">{p==="Live Session"?"⚡":p==="History"?"📋":"📊"}</span>
+                {p}
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className="nav-section-label">Quick Stats</div>
+            <div className="sidebar-stat">
+              <div className="stat-label">Today's Study</div>
+              <div style={{fontSize:20,fontWeight:800,fontFamily:'Space Mono,monospace',color:'var(--accent)'}}>3h 24m</div>
+            </div>
+            <div className="sidebar-stat">
+              <div className="stat-label">Posture Score</div>
+              <div style={{fontSize:20,fontWeight:800,fontFamily:'Space Mono,monospace',color:postureColor}}>{postureScore}%</div>
+            </div>
+            <div className="sidebar-stat">
+              <div className="stat-label">Streak</div>
+              <div style={{fontSize:20,fontWeight:800,fontFamily:'Space Mono,monospace',color:'var(--accent2)'}}>5 days 🔥</div>
+            </div>
+          </div>
+        </nav>
+
+        {/* ── MAIN ── */}
+        <main className="main">
+
+          {/* ====== LIVE SESSION ====== */}
+          {page === "Live Session" && (
+            <>
+              <div className="page-title">Live Session</div>
+              <div className="page-subtitle">// real-time posture monitoring &amp; study timer</div>
+
+              <div className="grid-4">
+                <div className="card card-accent">
+                  <div className="stat-label">Session Timer</div>
+                  <div className="stat-value" style={{color:'var(--accent)',fontSize:28}}>{timerStr}</div>
+                  <div className="stat-sub">{running?'▶ Running':'⏸ Paused'}</div>
+                </div>
+                <div className={"card " + (postureState==='Good'?'card-green':postureState==='Warn'?'card-warn':'card-danger')}>
+                  <div className="stat-label">Posture Score</div>
+                  <div className="stat-value" style={{color:postureColor}}>{postureScore}<span style={{fontSize:16}}>%</span></div>
+                  <div className="stat-sub">{postureEmoji} {postureState}</div>
+                </div>
+                <div className="card card-warn">
+                  <div className="stat-label">Phone Usage</div>
+                  <div className="stat-value" style={{color:phonePct>60?'var(--danger)':'var(--warn)',fontSize:28}}>
+                    {phonePct < 5 ? 'None' : phonePct+'%'}
+                  </div>
+                  <div className="stat-sub">of last 10 min</div>
+                </div>
+                <div className="card">
+                  <div className="stat-label">Mode</div>
+                  <div className="stat-value" style={{fontSize:22,color:'var(--accent)'}}>{mode}</div>
+                  <div className="stat-sub">Session #{Math.floor(secs/60)+1}</div>
+                </div>
+              </div>
+
+              <div className="grid-live">
+                {/* Camera card */}
+                <div className="card">
+                  <div className="section-header">
+                    <div className="section-title">Camera Feed</div>
+                    <span className="badge badge-danger">LIVE</span>
+                  </div>
+                  <div className="device-camera">
+                    <div className="camera-overlay" />
+                    <div className="live-indicator"><div className="status-dot dot-red" />REC</div>
+                    <div className="corner corner-tl"/><div className="corner corner-tr"/>
+                    <div className="corner corner-bl"/><div className="corner corner-br"/>
+                    <div className="person-silhouette">🧍</div>
+                    {running && <>
+                      <div className="keypoint" style={{left:'50%',top:'22%'}}/>
+                      <div className="keypoint" style={{left:'50%',top:'35%'}}/>
+                      <div className={"keypoint " + (postureState==='Bad'?'warn-point':'')} style={{left:'38%',top:'32%'}}/>
+                      <div className={"keypoint " + (postureState==='Bad'?'warn-point':'')} style={{left:'62%',top:'32%'}}/>
+                      <div className="keypoint" style={{left:'42%',top:'55%'}}/>
+                      <div className="keypoint" style={{left:'58%',top:'55%'}}/>
+                    </>}
+                    {!running && <div style={{fontSize:12,color:'var(--muted)'}}>Start session to activate camera</div>}
+                  </div>
+
+                  <div className="timer-display">{timerStr}</div>
+                  <div style={{maxWidth:320,margin:'0 auto 12px'}}>
+                    <div className="mode-tabs">
+                      {["Focus","Pomodoro","Break"].map(m => (
+                        <div key={m} className={"mode-tab " + (mode===m?'active':'')} onClick={()=>setMode(m)}>{m}</div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="timer-controls">
+                    <button className="btn btn-accent" onClick={()=>setRunning(!running)}>
+                      {running?'⏸ PAUSE':'▶ START'}
+                    </button>
+                    <button className="btn btn-muted" onClick={()=>setRunning(false)}>⏹ STOP</button>
+                    <button className="btn btn-danger">🔔 TEST ALARM</button>
+                  </div>
+                </div>
+
+                {/* Right column */}
+                <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                  {/* Posture analysis */}
+                  <div className={"card " + (postureState==='Good'?'card-green':postureState==='Warn'?'card-warn':'card-danger')}>
+                    <div className="section-title" style={{marginBottom:16}}>Posture Analysis</div>
+                    <div className="posture-main">
+                      <div className={"posture-circle " + (postureState==='Bad'?'bad':postureState==='Warn'?'warn':'')}
+                        style={{borderColor:postureColor,boxShadow:'0 0 30px '+postureColor+'55'}}>
+                        <div className="posture-icon">{postureEmoji}</div>
+                        <div className="posture-score" style={{color:postureColor}}>{postureScore}%</div>
+                      </div>
+                      <div className="posture-label" style={{color:postureColor}}>{postureState} Posture</div>
+                      <div style={{fontSize:12,color:'var(--muted)',marginTop:4,textAlign:'center'}}>
+                        {postureState==='Good'?'Keep it up! Spine aligned.':postureState==='Warn'?'Slight forward lean detected.':'Severe slouching! Fix posture now.'}
+                      </div>
+                    </div>
+                    <div style={{marginTop:16,display:'flex',flexDirection:'column',gap:8}}>
+                      {[
+                        {label:'Spine Alignment', val: postureState==='Good'?94:postureState==='Warn'?68:30},
+                        {label:'Head Position',   val: postureState==='Good'?88:postureState==='Warn'?72:45},
+                        {label:'Shoulder Level',  val: postureState==='Good'?96:postureState==='Warn'?60:50},
+                      ].map(m => (
+                        <div key={m.label}>
+                          <div style={{display:'flex',justifyContent:'space-between',fontSize:11,marginBottom:4,fontFamily:'Space Mono,monospace'}}>
+                            <span style={{color:'var(--muted)'}}>{m.label}</span>
+                            <span style={{color:m.val>80?'var(--accent3)':m.val>60?'var(--warn)':'var(--danger)'}}>{m.val}%</span>
+                          </div>
+                          <div style={{height:4,borderRadius:2,background:'var(--border)'}}>
+                            <div style={{height:'100%',width:m.val+'%',borderRadius:2,transition:'width 0.5s',
+                              background:m.val>80?'var(--accent3)':m.val>60?'var(--warn)':'var(--danger)'}} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Phone detector */}
+                  <div className="card card-warn">
+                    <div className="section-title" style={{marginBottom:12}}>Phone Detector</div>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+                      <span style={{fontSize:12,color:'var(--muted)',fontFamily:'Space Mono,monospace'}}>Phone Usage</span>
+                      <span style={{fontSize:12,fontFamily:'Space Mono,monospace',color:phonePct>50?'var(--danger)':'var(--warn)'}}>
+                        {phonePct}% of session
+                      </span>
+                    </div>
+                    <div className="phone-bar">
+                      <div className="phone-bar-fill" style={{width:phonePct+'%'}} />
+                    </div>
+                    <div style={{fontSize:11,color:'var(--muted)',marginTop:8,fontFamily:'Space Mono,monospace'}}>
+                      Alarm triggers at 3 min continuous use
+                    </div>
+                  </div>
+
+                  {/* Recent alerts */}
+                  <div className="card">
+                    <div className="section-title" style={{marginBottom:12}}>Recent Alerts</div>
+                    {recentAlerts.slice(0,3).map((a,i) => (
+                      <div key={i} className="alert-item"
+                        style={{borderColor:a.type==='danger'?'rgba(239,68,68,0.25)':a.type==='warn'?'rgba(255,184,0,0.25)':'rgba(255,107,26,0.2)'}}>
+                        <span className="alert-icon">{a.icon}</span>
+                        <div>
+                          <div style={{fontSize:12}}>{a.msg}</div>
+                          <div className="alert-time">{a.time}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ====== HISTORY ====== */}
+          {page === "History" && (
+            <>
+              <div className="page-title">Session History</div>
+              <div className="page-subtitle">// all past study sessions</div>
+
+              <div className="grid-4" style={{marginBottom:24}}>
+                <div className="card card-accent">
+                  <div className="stat-label">Total Hours</div>
+                  <div className="stat-value" style={{color:'var(--accent)'}}>22h<span style={{fontSize:18}}>14m</span></div>
+                  <div className="stat-delta delta-up">↑ +3h vs last week</div>
+                </div>
+                <div className="card card-green">
+                  <div className="stat-label">Avg Posture</div>
+                  <div className="stat-value" style={{color:'var(--accent3)'}}>83<span style={{fontSize:18}}>%</span></div>
+                  <div className="stat-delta delta-up">↑ +5% vs last week</div>
+                </div>
+                <div className="card card-warn">
+                  <div className="stat-label">Phone Alerts</div>
+                  <div className="stat-value" style={{color:'var(--warn)'}}>40</div>
+                  <div className="stat-delta delta-down">↓ Needs improvement</div>
+                </div>
+                <div className="card">
+                  <div className="stat-label">Sessions</div>
+                  <div className="stat-value" style={{color:'var(--accent)'}}>5</div>
+                  <div className="stat-sub">This week</div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="section-header">
+                  <div className="section-title">Session Log</div>
+                  <span className="badge badge-accent">5 sessions</span>
+                </div>
+                <table className="history-table">
+                  <thead>
+                    <tr><th>Date</th><th>Duration</th><th>Posture Score</th><th>Phone Alerts</th><th>Focus Level</th></tr>
+                  </thead>
+                  <tbody>
+                    {sessionHistory.map((s,i) => (
+                      <tr key={i}>
+                        <td className="mono" style={{color:'var(--muted)'}}>{s.date}</td>
+                        <td className="mono" style={{color:'var(--accent)'}}>{s.duration}</td>
+                        <td>
+                          <span className="mono" style={{color:s.posture>85?'var(--accent3)':s.posture>70?'var(--warn)':'var(--danger)'}}>{s.posture}%</span>
+                        </td>
+                        <td style={{color:'var(--muted)'}}>{s.phone}</td>
+                        <td><span className={"badge " + (s.focus==='High'?'badge-green':s.focus==='Medium'?'badge-warn':'badge-danger')}>{s.focus}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {/* ====== WEEKLY REPORT ====== */}
+          {page === "Weekly Report" && (
+            <>
+              <div className="page-title">Weekly Report</div>
+              <div className="page-subtitle">// Feb 15 – Feb 21, 2026 · Powered by Presage</div>
+
+              <div className="grid-3" style={{marginBottom:20}}>
+                <div className="card card-accent">
+                  <div className="stat-label">Total Study Time</div>
+                  <div className="stat-value" style={{color:'var(--accent)'}}>22h 14m</div>
+                  <div className="stat-delta delta-up">↑ Best week this month</div>
+                </div>
+                <div className="card card-green">
+                  <div className="stat-label">Posture Score</div>
+                  <div className="stat-value" style={{color:'var(--accent3)'}}>83%</div>
+                  <div className="stat-delta delta-up">↑ +5pts vs prev week</div>
+                </div>
+                <div className="card">
+                  <div className="stat-label">Focus Streak</div>
+                  <div className="stat-value" style={{color:'var(--accent2)'}}>5 🔥</div>
+                  <div className="stat-sub">consecutive days</div>
+                </div>
+              </div>
+
+              <div className="grid-2">
+                <div className="card">
+                  <div className="section-title" style={{marginBottom:8}}>Daily Study Hours</div>
+                  <div className="bar-chart">
+                    {weeklyHours.map((d,i) => (
+                      <div key={i} className="bar-col">
+                        <div className="bar" title={d.h+'h'} style={{
+                          height:(d.h/maxH*100)+'%',
+                          background: d.h>=5
+                            ? 'linear-gradient(180deg,#ff6b1a,rgba(255,107,26,0.4))'
+                            : d.h>=3
+                            ? 'linear-gradient(180deg,#ffb800,rgba(255,184,0,0.45))'
+                            : 'linear-gradient(180deg,var(--muted),rgba(176,112,80,0.35))'
+                        }} />
+                        <div className="bar-label">{d.day}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="card">
+                  <div className="section-title" style={{marginBottom:12}}>Performance Metrics</div>
+                  <div className="report-grid">
+                    {[
+                      {label:'Best Day',       val:'Wed · 7h'},
+                      {label:'Avg Session',    val:'4h 27m'},
+                      {label:'Phone Alerts',   val:'40 total'},
+                      {label:'Posture Alerts', val:'12 total'},
+                      {label:'Peak Hours',     val:'9am–1pm'},
+                      {label:'Study Mode',     val:'Focus 70%'},
+                    ].map((m,i) => (
+                      <div key={i} className="report-metric">
+                        <div className="report-metric-label">{m.label}</div>
+                        <div className="report-metric-val">{m.val}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="section-title" style={{marginBottom:16}}>AI Insights · Presage</div>
+                <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                  {[
+                    {icon:'💡',text:'Your posture is best in the morning (9–11am). Consider scheduling high-focus sessions during that window.',    color:'var(--accent)'},
+                    {icon:'📱',text:'Phone usage peaks on Thursday evenings. You had 18 alerts in a single session. Consider phone-free study mode.',color:'var(--warn)'},
+                    {icon:'🏆',text:'You studied 22h this week — a personal best! Consistency is your superpower. Keep the 5-day streak going.',    color:'var(--accent3)'},
+                    {icon:'🎯',text:'Try shorter 25-min Pomodoro sessions on low-focus days. Your data shows energy dips after 2h continuous study.',color:'var(--accent2)'},
+                  ].map((ins,i) => (
+                    <div key={i} className="alert-item" style={{borderColor:ins.color+'33'}}>
+                      <span style={{fontSize:20}}>{ins.icon}</span>
+                      <div style={{fontSize:13,lineHeight:1.5}}>{ins.text}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+        </main>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
