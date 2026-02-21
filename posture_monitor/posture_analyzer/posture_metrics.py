@@ -12,7 +12,7 @@ class PostureAnalyzer:
     def __init__(self):
         self.good_posture_frames = 0
         
-    def analyze_pose(self, landmarks, frame):
+    def analyze_pose(self, landmarks, frame, torso_thresh=160, head_thresh=0.08):
         points = np.array(landmarks)
         frame_w = frame.shape[1]
         
