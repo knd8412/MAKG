@@ -29,7 +29,7 @@ class PostureAnalyzer:
         print(f"Torso: {torso_angle:.1f}° | Head: {head_offset:.3f}")
         
         return {
-            'slouching': torso_angle < 160,
+            'slouching': torso_angle < torso_thresh,
             'torso_angle': torso_angle,
             'attentive': head_offset < 0.08,
             'head_forward': head_offset,

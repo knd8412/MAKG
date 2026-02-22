@@ -5,7 +5,21 @@ from config import BACKEND_URL, DEVICE_ID
 
 class BackendSender:
     def __init__(self):
-        self.session_start = time.time()
+        try:
+            # Call your Vultr API
+            response = requests.get(f"{BACKEND_URL}/api/status", timeout=3)
+            if response.status_code == 200:
+                cloud_data = response.json()
+                prev_seconds = cloud_data.get("session_seconds", 0)
+                # Offset session_start so the clock "resumes"
+                self.session_start = time.time() - prev_seconds
+                print(f"[Backend] Resumed session from cloud: {prev_seconds}s")
+            else:
+                self.session_start = time.time()
+        except Exception as e:
+            print(f"[Backend] Could not reach cloud to resume: {e}")
+            self.session_start = time.time()
+        
         self.queue = []
         self._start_worker()
 
