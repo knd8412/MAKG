@@ -407,6 +407,7 @@ function App() {
 
         if (response.ok) {
            console.log("Session saved successfully!");
+        } else {
            console.error("Server error:", response.status);
         }
       } catch (e) {
