@@ -13,6 +13,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
+{% raw %}
 const { useState, useEffect } = React;
 
 const getStyles = (dark) => `
@@ -197,7 +198,7 @@ const getStyles = (dark) => `
   .section-title::before { content: ''; display: inline-block; width: 3px; height: 14px; background: var(--accent); border-radius: 2px; }
 
   /* BADGES */
-  .badge         { font-size: 10px; font-family: 'Space Mono', monospace; padding: 2px 8px; border-radius: 10px; border: 1px solid; }
+  .badge          { font-size: 10px; font-family: 'Space Mono', monospace; padding: 2px 8px; border-radius: 10px; border: 1px solid; }
   .badge-accent  { color: var(--accent);  border-color: rgba(255,107,26,0.4);  background: var(--accent-dim); }
   .badge-green   { color: var(--accent3); border-color: ${dark ? 'rgba(57,255,20,0.3)' : 'rgba(34,197,94,0.3)'}; background: ${dark ? 'rgba(57,255,20,0.08)' : 'rgba(34,197,94,0.08)'}; }
   .badge-warn    { color: var(--warn);    border-color: rgba(255,184,0,0.35);  background: rgba(255,184,0,0.08); }
@@ -276,10 +277,9 @@ const getStyles = (dark) => `
     background: ${dark ? '#060a0d' : '#f7ede6'};
     border-radius: 8px; border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px; color: var(--muted);
     position: relative; overflow: hidden; margin-bottom: 12px;
   }
-  .camera-overlay { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,107,26,0.025) 20px, rgba(255,107,26,0.025) 21px); }
+  .camera-overlay { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,107,26,0.025) 20px, rgba(255,107,26,0.025) 21px); pointer-events: none;}
   .corner { position: absolute; width: 16px; height: 16px; border-color: var(--accent); border-style: solid; }
   .corner-tl { top:10px; left:10px;  border-width: 2px 0 0 2px; }
   .corner-tr { top:10px; right:10px; border-width: 2px 2px 0 0; }
@@ -288,7 +288,7 @@ const getStyles = (dark) => `
   .person-silhouette { font-size: 64px; opacity: ${dark ? 0.15 : 0.3}; }
   .keypoint { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); box-shadow: 0 0 6px var(--accent3); transform: translate(-50%,-50%); }
   .keypoint.warn-point { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
-  .live-indicator { position: absolute; top:10px; right:10px; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 4px; font-size: 10px; font-family: 'Space Mono', monospace; color: var(--danger); font-weight: 700; }
+  .live-indicator { position: absolute; top:10px; right:10px; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 4px; font-size: 10px; font-family: 'Space Mono', monospace; color: var(--danger); font-weight: 700; z-index: 5; }
 
   /* SIDEBAR STAT */
   .sidebar-stat { padding: 12px 14px; margin: 0 12px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; transition: background 0.3s; }
@@ -307,11 +307,11 @@ const getStyles = (dark) => `
 `;
 
 const sessionHistory = [
-  { date: "Feb 21", duration: "3h 24m", posture: 92, phone: "4 alerts",  focus: "High" },
+  { date: "Feb 21", duration: "3h 24m", posture: 92, phone: "4 alerts",   focus: "High" },
   { date: "Feb 20", duration: "5h 02m", posture: 78, phone: "11 alerts", focus: "Medium" },
-  { date: "Feb 19", duration: "2h 45m", posture: 95, phone: "1 alert",   focus: "High" },
+  { date: "Feb 19", duration: "2h 45m", posture: 95, phone: "1 alert",    focus: "High" },
   { date: "Feb 18", duration: "4h 10m", posture: 64, phone: "18 alerts", focus: "Low" },
-  { date: "Feb 17", duration: "6h 30m", posture: 88, phone: "6 alerts",  focus: "High" },
+  { date: "Feb 17", duration: "6h 30m", posture: 88, phone: "6 alerts",   focus: "High" },
 ];
 
 const weeklyHours = [
@@ -320,41 +320,72 @@ const weeklyHours = [
 ];
 
 const recentAlerts = [
-  { icon: "📱", msg: "Phone detected for 4+ minutes",    time: "2 min ago",   type: "warn" },
+  { icon: "📱", msg: "Phone detected for 4+ minutes",     time: "2 min ago",   type: "warn" },
   { icon: "🧍", msg: "Slouching detected — sit upright!", time: "18 min ago", type: "danger" },
-  { icon: "📱", msg: "Phone detected for 2 minutes",     time: "47 min ago",  type: "warn" },
+  { icon: "📱", msg: "Phone detected for 2 minutes",      time: "47 min ago",  type: "warn" },
   { icon: "⏸️", msg: "Break reminder — 90 min session",  time: "1h 20m ago",  type: "accent" },
 ];
-
-function useTimer(running) {
-  const [secs, setSecs] = useState(0);
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => setSecs(s => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [running]);
-  const fmt = s => {
-    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
-    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
-  };
-  return [secs, fmt(secs)];
-}
 
 function App() {
   const [dark, setDark] = useState(false);
   const [page, setPage] = useState("Live Session");
   const [running, setRunning] = useState(false);
-  const [secs, timerStr] = useTimer(running);
+  const [secs, setSecs] = useState(0); 
   const [mode, setMode] = useState("Focus");
   const [postureState, setPostureState] = useState("Good");
-  const [phonePct, setPhonePct] = useState(12);
+  const [phonePct, setPhonePct] = useState(0); 
+
+  // RASPBERRY PI IP ADDRESS
+  const PI_IP = "192.168.137.1";
 
   useEffect(() => {
-    const states = ["Good","Good","Good","Warn","Bad","Good"];
-    let i = 0;
-    const id = setInterval(() => { if (running) { i=(i+1)%states.length; setPostureState(states[i]); }}, 4000);
+    if (!running) return;
+    const id = setInterval(async () => {
+      try {
+        const response = await fetch(`http://${PI_IP}:5000/status`);
+        const data = await response.json();
+        if (data.posture) setPostureState(data.posture);
+      } catch (e) {
+        console.error("Status fetch error:", e);
+      }
+    }, 2000); // Check every 2 seconds
     return () => clearInterval(id);
-  }, [running]);
+  }, [running, PI_IP]);
+
+  const formatTime = (s) => {
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+  };
+  const timerStr = formatTime(secs);
+
+  const handleStopAndSave = async () => {
+    if (secs > 0) {
+      try {
+        await fetch(`http://${PI_IP}:5000/save_session`, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            duration_seconds: secs,
+            task_type: mode,
+            timestamp: new Date().toISOString()
+          })
+        });
+      } catch (e) {
+        console.error("Save error:", e);
+      }
+    }
+    setRunning(false);
+    setSecs(0); 
+  };
+  
+  useEffect(() => {
+  let id;
+  if (running) {
+    id = setInterval(() => setSecs(s => s + 1), 1000);
+  }
+  return () => clearInterval(id);
+}, [running]);
 
   useEffect(() => {
     if (!running) return;
@@ -467,26 +498,37 @@ function App() {
                     <span className="badge badge-danger">LIVE</span>
                   </div>
                   <div className="device-camera">
-                    <div className="camera-overlay" />
-                    <div className="live-indicator"><div className="status-dot dot-red" />REC</div>
-                    <div className="corner corner-tl"/><div className="corner corner-tr"/>
-                    <div className="corner corner-bl"/><div className="corner corner-br"/>
-                    <div className="person-silhouette">🧍</div>
-                    {running && <>
-                      <div className="keypoint" style={{left:'50%',top:'22%'}}/>
-                      <div className="keypoint" style={{left:'50%',top:'35%'}}/>
-                      <div className={"keypoint " + (postureState==='Bad'?'warn-point':'')} style={{left:'38%',top:'32%'}}/>
-                      <div className={"keypoint " + (postureState==='Bad'?'warn-point':'')} style={{left:'62%',top:'32%'}}/>
-                      <div className="keypoint" style={{left:'42%',top:'55%'}}/>
-                      <div className="keypoint" style={{left:'58%',top:'55%'}}/>
-                    </>}
-                    {!running && <div style={{fontSize:12,color:'var(--muted)'}}>Start session to activate camera</div>}
+                    <div className="camera-overlay" style={{zIndex: 2}} />
+                    
+                    {/* Live Status Indicator */}
+                    <div className="live-indicator" style={{display: running ? 'flex' : 'none', zIndex: 10}}>
+                      <div className="status-dot dot-red" />REC
+                    </div>
+                    
+                    {/* Corner Accents */}
+                    <div className="corner corner-tl" style={{zIndex: 10}}/><div className="corner corner-tr" style={{zIndex: 10}}/>
+                    <div className="corner corner-bl" style={{zIndex: 10}}/><div className="corner corner-br" style={{zIndex: 10}}/>
+                    
+                    <iframe
+                      src="https://vdo.ninja/?view=4M3erH5"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        border: 'none',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        zIndex: 1
+                      }}
+                      allow="autoplay; camera; microphone; fullscreen; picture-in-picture"
+                      title="Live Feed"
+                    ></iframe>
                   </div>
 
                   <div className="timer-display">{timerStr}</div>
                   <div style={{maxWidth:320,margin:'0 auto 12px'}}>
                     <div className="mode-tabs">
-                      {["Focus","Pomodoro","Break"].map(m => (
+                      {["Focus","Chores","Others"].map(m => (
                         <div key={m} className={"mode-tab " + (mode===m?'active':'')} onClick={()=>setMode(m)}>{m}</div>
                       ))}
                     </div>
@@ -495,8 +537,7 @@ function App() {
                     <button className="btn btn-accent" onClick={()=>setRunning(!running)}>
                       {running?'⏸ PAUSE':'▶ START'}
                     </button>
-                    <button className="btn btn-muted" onClick={()=>setRunning(false)}>⏹ STOP</button>
-                    <button className="btn btn-danger">🔔 TEST ALARM</button>
+                    <button className="btn btn-muted" onClick={handleStopAndSave}>⏹ STOP & SAVE</button>
                   </div>
                 </div>
 
@@ -613,13 +654,19 @@ function App() {
                   <tbody>
                     {sessionHistory.map((s,i) => (
                       <tr key={i}>
-                        <td className="mono" style={{color:'var(--muted)'}}>{s.date}</td>
-                        <td className="mono" style={{color:'var(--accent)'}}>{s.duration}</td>
+                        <td className="mono" style={{fontWeight:700}}>{s.date}</td>
+                        <td className="mono">{s.duration}</td>
                         <td>
-                          <span className="mono" style={{color:s.posture>85?'var(--accent3)':s.posture>70?'var(--warn)':'var(--danger)'}}>{s.posture}%</span>
+                            <span className="badge" style={{color:s.posture>80?'var(--accent3)':s.posture>70?'var(--warn)':'var(--danger)'}}>
+                                {s.posture}%
+                            </span>
                         </td>
-                        <td style={{color:'var(--muted)'}}>{s.phone}</td>
-                        <td><span className={"badge " + (s.focus==='High'?'badge-green':s.focus==='Medium'?'badge-warn':'badge-danger')}>{s.focus}</span></td>
+                        <td className="mono" style={{fontSize:11}}>{s.phone}</td>
+                        <td>
+                            <span className={"badge " + (s.focus==='High'?'badge-green':s.focus==='Medium'?'badge-warn':'badge-danger')}>
+                                {s.focus}
+                            </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -631,63 +678,48 @@ function App() {
           {/* ====== WEEKLY REPORT ====== */}
           {page === "Weekly Report" && (
             <>
-              <div className="page-title">Weekly Report</div>
-              <div className="page-subtitle">// Feb 15 – Feb 21, 2026 · Powered by Presage</div>
-
-              <div className="grid-3" style={{marginBottom:20}}>
-                <div className="card card-accent">
-                  <div className="stat-label">Total Study Time</div>
-                  <div className="stat-value" style={{color:'var(--accent)'}}>22h 14m</div>
-                  <div className="stat-delta delta-up">↑ Best week this month</div>
-                </div>
-                <div className="card card-green">
-                  <div className="stat-label">Posture Score</div>
-                  <div className="stat-value" style={{color:'var(--accent3)'}}>83%</div>
-                  <div className="stat-delta delta-up">↑ +5pts vs prev week</div>
-                </div>
-                <div className="card">
-                  <div className="stat-label">Focus Streak</div>
-                  <div className="stat-value" style={{color:'var(--accent2)'}}>5 🔥</div>
-                  <div className="stat-sub">consecutive days</div>
-                </div>
-              </div>
+              <div className="page-title">Weekly Insights</div>
+              <div className="page-subtitle">// analytics for Feb 15 — Feb 21</div>
 
               <div className="grid-2">
                 <div className="card">
-                  <div className="section-title" style={{marginBottom:8}}>Daily Study Hours</div>
+                  <div className="section-title" style={{marginBottom:24}}>Study Hours Breakdown</div>
                   <div className="bar-chart">
-                    {weeklyHours.map((d,i) => (
-                      <div key={i} className="bar-col">
-                        <div className="bar" title={d.h+'h'} style={{
-                          height:(d.h/maxH*100)+'%',
-                          background: d.h>=5
-                            ? 'linear-gradient(180deg,#ff6b1a,rgba(255,107,26,0.4))'
-                            : d.h>=3
-                            ? 'linear-gradient(180deg,#ffb800,rgba(255,184,0,0.45))'
-                            : 'linear-gradient(180deg,var(--muted),rgba(176,112,80,0.35))'
+                    {weeklyHours.map(d => (
+                      <div key={d.day} className="bar-col">
+                        <div className="bar" style={{
+                          height: (d.h/maxH * 100) + 'px',
+                          background: d.h > 5 ? 'var(--accent)' : 'var(--accent-dim)',
+                          border: '1px solid var(--accent)'
                         }} />
-                        <div className="bar-label">{d.day}</div>
+                        <span className="bar-label">{d.day}</span>
                       </div>
                     ))}
+                  </div>
+                  <div style={{marginTop:20, fontSize:12, color:'var(--muted)', textAlign:'center'}}>
+                    You studied most on <span style={{color:'var(--accent)'}}>Wednesday</span> (7.0h)
                   </div>
                 </div>
 
                 <div className="card">
-                  <div className="section-title" style={{marginBottom:12}}>Performance Metrics</div>
+                  <div className="section-title" style={{marginBottom:16}}>Performance Metrics</div>
                   <div className="report-grid">
-                    {[
-                      {label:'Best Day',       val:'Wed · 7h'},
-                      {label:'Avg Session',    val:'4h 27m'},
-                      {label:'Phone Alerts',   val:'40 total'},
-                      {label:'Posture Alerts', val:'12 total'},
-                      {label:'Peak Hours',     val:'9am–1pm'},
-                      {label:'Study Mode',     val:'Focus 70%'},
-                    ].map((m,i) => (
-                      <div key={i} className="report-metric">
-                        <div className="report-metric-label">{m.label}</div>
-                        <div className="report-metric-val">{m.val}</div>
-                      </div>
-                    ))}
+                    <div className="report-metric">
+                      <div className="report-metric-label">Focus Score</div>
+                      <div className="report-metric-val">84%</div>
+                    </div>
+                    <div className="report-metric">
+                      <div className="report-metric-label">Posture Rank</div>
+                      <div className="report-metric-val">TOP 12%</div>
+                    </div>
+                    <div className="report-metric">
+                      <div className="report-metric-label">Phone Free</div>
+                      <div className="report-metric-val">18h 10m</div>
+                    </div>
+                    <div className="report-metric">
+                      <div className="report-metric-label">Alert Count</div>
+                      <div className="report-metric-val">62 total</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -717,7 +749,9 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+{% endraw %}
 </script>
 </body>
 </html>
