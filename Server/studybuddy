@@ -1,0 +1,19 @@
+server {
+    listen 443 ssl;
+    server_name 45.76.137.251;
+
+    ssl_certificate /etc/ssl/certs/studybuddy.crt;
+    ssl_certificate_key /etc/ssl/private/studybuddy.key;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+
+server {
+    listen 80;
+    server_name 45.76.137.251;
+    return 301 https://$host$request_uri;
+}
