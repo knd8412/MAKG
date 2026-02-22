@@ -517,10 +517,21 @@ function App() {
                   </div>
                   <div className="stat-sub">of last 10 min</div>
                 </div>
-                <div className="card">
-                  <div className="stat-label">Mode</div>
-                  <div className="stat-value" style={{fontSize:22,color:'var(--accent)'}}>{mode}</div>
-                  <div className="stat-sub">Session #{Math.floor(secs/60)+1}</div>
+               <div className="card" style={{gridRow:'span 2', padding:0, overflow:'hidden', position:'relative', minHeight: '300px'}}>
+                  <div className="section-title" style={{position:'absolute', top:16, left:16, zIndex:10, background:'rgba(0,0,0,0.6)', padding:'4px 8px', borderRadius:4, backdropFilter:'blur(4px)'}}>
+                    LIVE FEED · VDO.NINJA
+                  </div>
+                  
+                  <iframe
+                    src="https://vdo.ninja/?view=4M3erH5&autoplay=1&mute=1&transparent=1"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      border: 'none',
+                      background: '#000'
+                    }}
+                    allow="camera;microphone;fullscreen;display-capture;autoplay"
+                  ></iframe>
                 </div>
               </div>
 
