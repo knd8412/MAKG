@@ -31,7 +31,7 @@ class PostureAnalyzer:
         return {
             'slouching': torso_angle < torso_thresh,
             'torso_angle': torso_angle,
-            'attentive': head_offset < 0.08,
+            'attentive': head_offset < head_thresh,
             'head_forward': head_offset,
             'nose': nose,
             'shoulder_avg': shoulder_avg,
