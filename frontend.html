@@ -330,37 +330,52 @@ function App() {
   const [dark, setDark] = useState(false);
   const [page, setPage] = useState("Live Session");
   const [running, setRunning] = useState(false);
-  const [secs, setSecs] = useState(0); 
+  const [secs, setSecs] = useState(0);
   const [mode, setMode] = useState("Focus");
   const [postureState, setPostureState] = useState("Good");
-  const [phonePct, setPhonePct] = useState(0); 
+  const [phonePct, setPhonePct] = useState(0);
 
   // RASPBERRY PI IP ADDRESS
   const PI_IP = "192.168.137.1";
 
+  // FIND THIS SECTION IN YOUR frontend.html:
   useEffect(() => {
-    if (!running) return;
-    
+    // This runs every 2 seconds to get posture and phone data from the cloud
     const id = setInterval(async () => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1500); // Stop waiting after 1.5s
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
 
       try {
-        const response = await fetch(`http://${PI_IP}:5000/status`, { 
+        const response = await fetch('/api/status', { 
           signal: controller.signal 
         });
+        
         const data = await response.json();
-        if (data.posture) setPostureState(data.posture);
+        
+        // 1. Always update posture and phone status from the Pi
+        if (data.current_posture) setPostureState(data.current_posture);
+        if (data.phone_usage_pct !== undefined) setPhonePct(data.phone_usage_pct);
+        
+        // 2. Remote Wake-up:
+        // If the server says a session is active but our local timer is OFF,
+        // it means the Pi started the session. We should start our timer.
+        if (data.is_active && !running) {
+            setSecs(data.session_seconds);
+            setRunning(true);
+        }
+
+        // NOTE: I removed the "else if (!data.is_active && running)" block.
+        // This prevents the server from automatically pausing your timer.
+        
       } catch (e) {
-        // This prevents the "Failed to Fetch" from breaking the UI
-        console.log("Pi not reachable. Check if Pi is on same WiFi.");
+        console.log("Syncing with cloud...");
       } finally {
         clearTimeout(timeoutId);
       }
     }, 2000); 
 
     return () => clearInterval(id);
-  }, [running]);
+  }, [running, secs]); // Added secs to dependencies to keep sync accurate
 
   const formatTime = (s) => {
     const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
@@ -377,7 +392,7 @@ function App() {
   const handleStopAndSave = async () => {
     if (secs > 0) {
       try {
-        // Using a relative path WITHOUT 'http' or 'https' 
+        // Using a relative path WITHOUT 'http' or 'https'
         // ensures it uses whatever port/protocol the page is currently on.
         const response = await fetch('/api/sessions', {
           method: 'POST',
@@ -385,7 +400,7 @@ function App() {
           body: JSON.stringify({
             duration_seconds: secs,
             task_type: mode,
-            posture_avg: postureScore, 
+            posture_avg: postureScore,
             timestamp: new Date().toISOString()
           })
         });
@@ -400,9 +415,9 @@ function App() {
       }
     }
     setRunning(false);
-    setSecs(0); 
+    setSecs(0);
   };
-  
+
   useEffect(() => {
   let id;
   if (running) {
@@ -518,16 +533,16 @@ function App() {
                   </div>
                   <div className="device-camera">
                     <div className="camera-overlay" style={{zIndex: 2}} />
-                    
+
                     {/* Live Status Indicator */}
                     <div className="live-indicator" style={{display: running ? 'flex' : 'none', zIndex: 10}}>
                       <div className="status-dot dot-red" />REC
                     </div>
-                    
+
                     {/* Corner Accents */}
                     <div className="corner corner-tl" style={{zIndex: 10}}/><div className="corner corner-tr" style={{zIndex: 10}}/>
                     <div className="corner corner-bl" style={{zIndex: 10}}/><div className="corner corner-br" style={{zIndex: 10}}/>
-                    
+
                     <iframe
                       src="https://vdo.ninja/?view=4M3erH5&autostart=1&mute=1"
                       style={{
