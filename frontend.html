@@ -346,16 +346,16 @@ function App() {
       const timeoutId = setTimeout(() => controller.abort(), 1500);
 
       try {
-        const response = await fetch('/api/status', { 
-          signal: controller.signal 
+        const response = await fetch('/api/status', {
+          signal: controller.signal
         });
-        
+
         const data = await response.json();
-        
+
         // 1. Always update posture and phone status from the Pi
         if (data.current_posture) setPostureState(data.current_posture);
         if (data.phone_usage_pct !== undefined) setPhonePct(data.phone_usage_pct);
-        
+
         // 2. Remote Wake-up:
         // If the server says a session is active but our local timer is OFF,
         // it means the Pi started the session. We should start our timer.
@@ -366,13 +366,13 @@ function App() {
 
         // NOTE: I removed the "else if (!data.is_active && running)" block.
         // This prevents the server from automatically pausing your timer.
-        
+
       } catch (e) {
         console.log("Syncing with cloud...");
       } finally {
         clearTimeout(timeoutId);
       }
-    }, 2000); 
+    }, 2000);
 
     return () => clearInterval(id);
   }, [running, secs]); // Added secs to dependencies to keep sync accurate
@@ -407,7 +407,6 @@ function App() {
 
         if (response.ok) {
            console.log("Session saved successfully!");
-        } else {
            console.error("Server error:", response.status);
         }
       } catch (e) {
@@ -783,7 +782,8 @@ function App() {
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const rootElement = document.getElementById('root');
+const root = ReactDOM.createRoot(rootElement);
 root.render(<App />);
 {% endraw %}
 </script>
