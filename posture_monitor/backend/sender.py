@@ -6,12 +6,10 @@ from config import BACKEND_URL, DEVICE_ID
 class BackendSender:
     def __init__(self):
         try:
-            # Call your Vultr API
             response = requests.get(f"{BACKEND_URL}/api/status", timeout=3)
             if response.status_code == 200:
                 cloud_data = response.json()
                 prev_seconds = cloud_data.get("session_seconds", 0)
-                # Offset session_start so the clock "resumes"
                 self.session_start = time.time() - prev_seconds
                 print(f"[Backend] Resumed session from cloud: {prev_seconds}s")
             else:
@@ -19,41 +17,32 @@ class BackendSender:
         except Exception as e:
             print(f"[Backend] Could not reach cloud to resume: {e}")
             self.session_start = time.time()
-        
+
         self.queue = []
         self._start_worker()
 
     def send_event(self, analysis):
-        """
-        Queues a posture event to send to the backend.
-        Non-blocking — runs in background thread.
-        """
         event = {
-            "device_id": DEVICE_ID,
-            "timestamp": time.time(),
-            "session_start": self.session_start,
-            "slouching": analysis.get("slouching", False),
-            "on_phone": analysis.get("on_phone", False),
-            "attentive": analysis.get("attentive", True),
-            "torso_angle": round(analysis.get("torso_angle", 0), 2),
-            "head_forward": round(analysis.get("head_forward", 0), 3),
+            "device_id":    DEVICE_ID,
+            "timestamp":    float(time.time()),
+            "session_start": float(self.session_start),
+            "slouching":    bool(analysis.get("slouching", False)),
+            "on_phone":     bool(analysis.get("on_phone", False)),
+            "attentive":    bool(analysis.get("attentive", True)),
+            "torso_angle":  round(float(analysis.get("torso_angle", 0)), 2),
+            "head_forward": round(float(analysis.get("head_forward", 0)), 3),
             "posture_score": self._calculate_score(analysis)
         }
         self.queue.append(event)
 
     def _calculate_score(self, analysis):
-        """Simple 0-100 focus/posture score."""
         score = 100
-        if analysis.get("slouching"):
-            score -= 40
-        if analysis.get("on_phone"):
-            score -= 40
-        if not analysis.get("attentive"):
-            score -= 20
-        return max(0, score)
+        if analysis.get("slouching"):    score -= 40
+        if analysis.get("on_phone"):     score -= 40
+        if not analysis.get("attentive"): score -= 20
+        return int(max(0, score))
 
     def _start_worker(self):
-        """Background thread that drains the queue every 5 seconds."""
         def _worker():
             while True:
                 time.sleep(5)
@@ -61,7 +50,6 @@ class BackendSender:
                     batch = self.queue.copy()
                     self.queue.clear()
                     self._post_batch(batch)
-
         threading.Thread(target=_worker, daemon=True).start()
 
     def _post_batch(self, events):

@@ -1,23 +1,34 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 # Camera
-CAMERA_INDEX = 0
-FRAME_WIDTH, FRAME_HEIGHT = 320, 240
-FPS_TARGET = 10
+CAMERA_INDEX  = 0
+FRAME_WIDTH   = 320
+FRAME_HEIGHT  = 240
+FPS_TARGET    = 10
+
+# vdo.ninja (set USE_VDO_NINJA = True and paste your stream URL)
+USE_VDO_NINJA = True
+VDO_NINJA_URL = os.getenv("VDO_NINJA_URL", "")
+# Example URL format:
+# "https://vdo.ninja/?view=YOUR_ROOM_ID&codec=mjpeg&quality=0"
 
 # Posture thresholds (overridden by calibration if set)
-SLOUCH_ANGLE_THRESH = 160
+SLOUCH_ANGLE_THRESH = 15
 HEAD_FORWARD_THRESH = 0.08
 
-# Gemini
-GEMINI_API_KEY = "AIzaSyAUAUYjvkUNuyXGJ5NXCneURsSLK0CcYbk"
-GEMINI_CHECK_INTERVAL = 5  # seconds between Gemini API calls (save quota)
+# Gemini — loaded from .env file
+GEMINI_API_KEY       = os.getenv("GEMINI_API_KEY", "")
+GEMINI_CHECK_INTERVAL = 5
 
-# ElevenLabs
-ELEVENLABS_API_KEY = "sk_7522b4119e7543f507a297c0527b1e46ee21be5ebe5b685c   "
-ELEVENLABS_VOICE_ID = "2ajXGJNYBR0iNHpS4VZb"
+# ElevenLabs — loaded from .env file
+ELEVENLABS_API_KEY  = os.getenv("ELEVENLABS_API_KEY", "")
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")
 
 # Backend
-BACKEND_URL = "http://45.76.137.251"
-DEVICE_ID = "focuspal-device-001"
+BACKEND_URL = os.getenv("BACKEND_URL", "http://45.76.137.251")
+DEVICE_ID   = "focuspal-device-001"
 
 # Debug
 DEBUG_MODE = True
