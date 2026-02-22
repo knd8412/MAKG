@@ -340,17 +340,27 @@ function App() {
 
   useEffect(() => {
     if (!running) return;
+    
     const id = setInterval(async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500); // Stop waiting after 1.5s
+
       try {
-        const response = await fetch(`http://${PI_IP}:5000/status`);
+        const response = await fetch(`http://${PI_IP}:5000/status`, { 
+          signal: controller.signal 
+        });
         const data = await response.json();
         if (data.posture) setPostureState(data.posture);
       } catch (e) {
-        console.error("Status fetch error:", e);
+        // This prevents the "Failed to Fetch" from breaking the UI
+        console.log("Pi not reachable. Check if Pi is on same WiFi.");
+      } finally {
+        clearTimeout(timeoutId);
       }
-    }, 2000); // Check every 2 seconds
+    }, 2000); 
+
     return () => clearInterval(id);
-  }, [running, PI_IP]);
+  }, [running]);
 
   const formatTime = (s) => {
     const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
@@ -358,21 +368,35 @@ function App() {
   };
   const timerStr = formatTime(secs);
 
+  // Moved these up so they are correctly scoped for the save function
+  const postureScore = postureState==="Good" ? 94 : postureState==="Warn" ? 71 : 38;
+  const postureColor = postureState==="Good" ? "var(--accent3)" : postureState==="Warn" ? "var(--warn)" : "var(--danger)";
+  const postureEmoji = postureState==="Good" ? "✅" : postureState==="Warn" ? "⚠️" : "🚨";
+  const maxH = Math.max(...weeklyHours.map(d => d.h));
+
   const handleStopAndSave = async () => {
     if (secs > 0) {
       try {
-        await fetch(`http://${PI_IP}:5000/save_session`, {
+        // Using a relative path WITHOUT 'http' or 'https' 
+        // ensures it uses whatever port/protocol the page is currently on.
+        const response = await fetch('/api/sessions', {
           method: 'POST',
-          mode: 'cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             duration_seconds: secs,
             task_type: mode,
+            posture_avg: postureScore, 
             timestamp: new Date().toISOString()
           })
         });
+
+        if (response.ok) {
+           console.log("Session saved successfully!");
+        } else {
+           console.error("Server error:", response.status);
+        }
       } catch (e) {
-        console.error("Save error:", e);
+        console.error("Database save error:", e);
       }
     }
     setRunning(false);
@@ -392,11 +416,6 @@ function App() {
     const id = setInterval(() => setPhonePct(p => Math.min(100, p+2)), 3000);
     return () => clearInterval(id);
   }, [running]);
-
-  const postureScore = postureState==="Good" ? 94 : postureState==="Warn" ? 71 : 38;
-  const postureColor = postureState==="Good" ? "var(--accent3)" : postureState==="Warn" ? "var(--warn)" : "var(--danger)";
-  const postureEmoji = postureState==="Good" ? "✅" : postureState==="Warn" ? "⚠️" : "🚨";
-  const maxH = Math.max(...weeklyHours.map(d => d.h));
 
   return (
     <>
@@ -510,7 +529,7 @@ function App() {
                     <div className="corner corner-bl" style={{zIndex: 10}}/><div className="corner corner-br" style={{zIndex: 10}}/>
                     
                     <iframe
-                      src="https://vdo.ninja/?view=4M3erH5"
+                      src="https://vdo.ninja/?view=4M3erH5&autostart=1&mute=1"
                       style={{
                         width: '100%',
                         height: '100%',
