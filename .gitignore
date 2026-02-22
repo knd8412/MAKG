@@ -37,7 +37,6 @@ credentials.json
 *.swo
 
 # MediaPipe / ML models (large files, download separately)
-*.task
 *.tflite
 *.onnx
 
